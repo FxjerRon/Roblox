@@ -3,18 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Form Submission</title>
+    <title>Simple Form</title>
 </head>
 <body>
-    <h2>กรอกข้อมูล</h2>
-    <form action="process_form.php" method="post">
-        <label for="name">ชื่อ:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
-        <label for="email">อีเมล:</label><br>
-        <input type="email" id="email" name="email" required><br><br>
-        <label for="message">ข้อความ:</label><br>
-        <textarea id="message" name="message" rows="4" cols="50"></textarea><br><br>
-        <input type="submit" value="Submit">
+    <h2>Simple Form</h2>
+    <form id="myForm">
+        <label for="name">Name:</label><br>
+        <input type="text" id="name" name="name"><br>
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email"><br><br>
+        <button type="submit">Submit</button>
     </form>
+
+    <script>
+        document.getElementById("myForm").addEventListener("submit", function(event) {
+            event.preventDefault(); // หยุดการโหลดหน้าใหม่
+            let formData = new FormData(this);
+            let jsonData = {};
+            formData.forEach(function(value, key) {
+                jsonData[key] = value;
+            });
+
+            // ส่งข้อมูลไปยัง GitHub API หรือ GitHub Actions
+            sendDataToGitHub(jsonData);
+        });
+
+        function sendDataToGitHub(data) {
+            // แสดงตัวอย่างการใช้งาน fetch API สำหรับส่งข้อมูล
+            fetch('https://api.github.com/repos/your-username/your-repo/contents/data.txt', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'token your-github-token',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: 'Add data from form',
+                    content: btoa(JSON.stringify(data)), // Encode data to base64
+                    branch: 'main' // หรือ branch ที่คุณใช้
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data successfully sent:', data);
+                // สามารถเพิ่มการปรับปรุง UI หรือการแจ้งเตือนได้ตามความต้องการ
+            })
+            .catch(error => {
+                console.error('Error sending data:', error);
+                // จัดการข้อผิดพลาดเช่น แสดงข้อความผิดพลาดหรือลองส่งข้อมูลอีกครั้ง
+            });
+        }
+    </script>
 </body>
 </html>
