@@ -3,7 +3,7 @@
 document.getElementById('dataForm').addEventListener('submit', function(event) {
     event.preventDefault(); // ป้องกันการโหลดหน้าใหม่เมื่อ submit ฟอร์ม
 
-    // ดึงค่าจากฟอร์ม
+    // ดึงค่าจากฟอร์ม.
     let formData = new FormData(this);
     let formDataObject = {};
     formData.forEach(function(value, key){
