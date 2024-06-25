@@ -1,51 +1,66 @@
-// script.js
-
-document.getElementById('dataForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // ป้องกันการโหลดหน้าใหม่เมื่อ submit ฟอร์ม
-
-    // ดึงค่าจากฟอร์ม
+document.getElementById("myForm").addEventListener("submit", function(event) {
+    event.preventDefault(); // หยุดการโหลดหน้าใหม่
+    
     let formData = new FormData(this);
-    let formDataObject = {};
-    formData.forEach(function(value, key){
-        formDataObject[key] = value;
+    let jsonData = {};
+    
+    formData.forEach(function(value, key) {
+        jsonData[key] = value;
     });
 
-    // สร้างข้อความที่จะเขียนลงในไฟล์ .txt
-    let textToWrite = `Name: ${formDataObject.name}\nEmail: ${formDataObject.email}\nMessage: ${formDataObject.message}`;
-
-    // ส่งคำร้องขอ POST ไปยัง GitHub API เพื่อสร้างหรืออัปเดตไฟล์ .txt ใน repository
-    saveDataToFile(textToWrite);
+    // ดึงข้อมูลปัจจุบันของไฟล์ data.txt จาก GitHub ก่อน
+    fetch('https://api.github.com/repos/your-username/your-repo/contents/data.txt', {
+        headers: {
+            'Authorization': 'token your-github-token' // ใส่ GitHub Token ของคุณที่นี่
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // อัปเดตข้อมูลใน data.txt ด้วยข้อมูลที่เพิ่งส่งเข้ามา
+        updateFileInGitHub(data, jsonData);
+    })
+    .catch(error => {
+        console.error('Error fetching file data:', error);
+        // จัดการข้อผิดพลาดเช่น แสดงข้อความผิดพลาดหรือลองส่งข้อมูลอีกครั้ง
+    });
 });
 
-async function saveDataToFile(data) {
-    const repoOwner = 'your-github-username'; // ชื่อผู้ใช้ GitHub ของคุณ
-    const repoName = 'your-repository-name'; // ชื่อ repository ของคุณ
-    const filename = 'data.txt'; // ชื่อไฟล์ที่ต้องการบันทึก
+function updateFileInGitHub(fileData, newData) {
+    // Decode content from base64
+    let currentContent = atob(fileData.content);
+    let updatedContent = `${currentContent}\n${JSON.stringify(newData)}`; // เพิ่มข้อมูลใหม่ด้านล่างข้อมูลเดิม
 
-    const token = 'your-personal-access-token'; // PAT ที่คุณสร้างขึ้น
-    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filename}`;
-
-    try {
-        const response = await fetch(apiUrl, {
-            method: 'PUT',
-            headers: {
-                Authorization: `token ${token}`,
-                Accept: 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: 'Add data.txt via API',
-                content: btoa(data) // encode ข้อมูลให้อยู่ในรูปแบบ Base64
-            })
-        });
-
-        if (response.ok) {
-            console.log('File data.txt created or updated successfully.');
-            // ทำสิ่งที่คุณต้องการหลังจากบันทึกไฟล์สำเร็จ
-        } else {
-            console.error('Failed to create or update file data.txt:', response.statusText);
+    // ส่งข้อมูลอัปเดตไปยัง GitHub
+    fetch(fileData.url, {
+        method: 'PUT',
+        headers: {
+            'Authorization': 'token your-github-token', // ใส่ GitHub Token ของคุณที่นี่
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            message: 'Update data in data.txt',
+            content: btoa(updatedContent), // Encode เนื้อหาใหม่เป็น base64
+            sha: fileData.sha, // SHA hash ของไฟล์ปัจจุบันที่ต้องการอัปเดต
+            branch: 'main' // หรือ branch ที่คุณใช้
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
-    } catch (error) {
-        console.error('Error saving data to file:', error.message);
-    }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Data successfully updated:', data);
+        // สามารถเพิ่มการปรับปรุง UI หรือการแจ้งเตือนได้ตามความต้องการ
+    })
+    .catch(error => {
+        console.error('Error updating data:', error);
+        // จัดการข้อผิดพลาดเช่น แสดงข้อความผิดพลาดหรือลองส่งข้อมูลอีกครั้ง
+    });
 }
